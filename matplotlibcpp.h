@@ -470,6 +470,31 @@ bool plot(const std::vector<Numeric> &x, const std::vector<Numeric> &y, const st
     return res;
 }
 
+// https://stackoverflow.com/questions/76077363/why-does-matplotlib-cpp-throw-runtime-exceptions-in-the-3d-examples
+PyObject* init_3d_axis(PyObject* fig)
+{
+    PyObject *asp_kwargs = PyDict_New();
+    PyDict_SetItemString(asp_kwargs, "projection", PyString_FromString("3d"));
+
+    PyObject * asp = PyObject_GetAttrString(fig, "add_subplot");
+    Py_INCREF(asp);
+    PyObject *tmpax = PyObject_Call(asp, detail::_interpreter::get().s_python_empty_tuple, asp_kwargs);
+    Py_INCREF(tmpax);
+
+    PyObject *gca = PyObject_GetAttrString(fig, "gca");
+    if (!gca) throw std::runtime_error("No gca");
+    Py_INCREF(gca);
+    PyObject *axis = PyObject_Call(gca, detail::_interpreter::get().s_python_empty_tuple, detail::_interpreter::get().s_python_empty_tuple);
+
+    if (!axis) throw std::runtime_error("No axis");
+    Py_INCREF(axis);
+
+    Py_DECREF(gca);
+    Py_DECREF(tmpax);
+    Py_DECREF(asp);
+    return axis;
+}
+
 // TODO - it should be possible to make this work by implementing
 // a non-numpy alternative for `detail::get_2darray()`.
 #ifndef WITHOUT_NUMPY
@@ -555,21 +580,7 @@ void plot_surface(const std::vector<::std::vector<Numeric>> &x,
   Py_DECREF(fig_exists);
   if (!fig) throw std::runtime_error("Call to figure() failed.");
 
-  PyObject *gca_kwargs = PyDict_New();
-  PyDict_SetItemString(gca_kwargs, "projection", PyString_FromString("3d"));
-
-  PyObject *gca = PyObject_GetAttrString(fig, "gca");
-  if (!gca) throw std::runtime_error("No gca");
-  Py_INCREF(gca);
-  PyObject *axis = PyObject_Call(
-      gca, detail::_interpreter::get().s_python_empty_tuple, gca_kwargs);
-
-  if (!axis) throw std::runtime_error("No axis");
-  Py_INCREF(axis);
-
-  Py_DECREF(gca);
-  Py_DECREF(gca_kwargs);
-
+  PyObject* axis = init_3d_axis(fig);
   PyObject *plot_surface = PyObject_GetAttrString(axis, "plot_surface");
   if (!plot_surface) throw std::runtime_error("No surface");
   Py_INCREF(plot_surface);
@@ -723,20 +734,7 @@ void plot3(const std::vector<Numeric> &x,
   }
   if (!fig) throw std::runtime_error("Call to figure() failed.");
 
-  PyObject *gca_kwargs = PyDict_New();
-  PyDict_SetItemString(gca_kwargs, "projection", PyString_FromString("3d"));
-
-  PyObject *gca = PyObject_GetAttrString(fig, "gca");
-  if (!gca) throw std::runtime_error("No gca");
-  Py_INCREF(gca);
-  PyObject *axis = PyObject_Call(
-      gca, detail::_interpreter::get().s_python_empty_tuple, gca_kwargs);
-
-  if (!axis) throw std::runtime_error("No axis");
-  Py_INCREF(axis);
-
-  Py_DECREF(gca);
-  Py_DECREF(gca_kwargs);
+  PyObject* axis = init_3d_axis(fig);
 
   PyObject *plot3 = PyObject_GetAttrString(axis, "plot");
   if (!plot3) throw std::runtime_error("No 3D line plot");
@@ -1126,20 +1124,7 @@ bool scatter(const std::vector<NumericX>& x,
   Py_DECREF(fig_exists);
   if (!fig) throw std::runtime_error("Call to figure() failed.");
 
-  PyObject *gca_kwargs = PyDict_New();
-  PyDict_SetItemString(gca_kwargs, "projection", PyString_FromString("3d"));
-
-  PyObject *gca = PyObject_GetAttrString(fig, "gca");
-  if (!gca) throw std::runtime_error("No gca");
-  Py_INCREF(gca);
-  PyObject *axis = PyObject_Call(
-      gca, detail::_interpreter::get().s_python_empty_tuple, gca_kwargs);
-
-  if (!axis) throw std::runtime_error("No axis");
-  Py_INCREF(axis);
-
-  Py_DECREF(gca);
-  Py_DECREF(gca_kwargs);
+  PyObject* axis = init_3d_axis(fig);
 
   PyObject *plot3 = PyObject_GetAttrString(axis, "scatter");
   if (!plot3) throw std::runtime_error("No 3D line plot");
